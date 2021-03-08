@@ -22,3 +22,15 @@ $(call inherit-product, build/target/product/full.mk)
 PRODUCT_BUILD_PROP_OVERRIDES += BUILD_UTC_DATE=0
 PRODUCT_NAME := full_t68
 PRODUCT_DEVICE := t68
+
+
+# Init files
+PRODUCT_COPY_FILES += \
+    device/onyx/t68/fstab.freescale:root/fstab.freescale \
+	device/onyx/t68/recovery/init.recovery.freescale.rc:root/init.recovery.freescale.rc \
+	device/onyx/t68/ueventd.freescale.rc:root/ueventd.freescale.rc
+
+# Include epdc firmware in recovery ramdisk
+# TODO include in recovery only
+PRODUCT_COPY_FILES += \
+	vendor/onyx/t68/proprietary/firmware/imx/epdc.fw:root/lib/firmware/imx/epdc/epdc_E68_V220.fw

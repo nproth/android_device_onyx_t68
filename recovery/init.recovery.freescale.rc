@@ -1,0 +1,4 @@
+# Needs epdc.fw file on vendor partition
+on init
+    mkdir /vendor
+    mount ext4 /dev/block/mmcblk0p9 /vendor ro nosuid nodev
