@@ -34,6 +34,7 @@ TARGET_BOOTLOADER_BOARD_NAME := t68
 
 # From unpackbootimg
 # TODO enforce SELinux
+# Real name of display is probably ED068OG1 instead of E68_V220
 BOARD_KERNEL_CMDLINE := console=ttymxc0,115200 init=/init androidboot.console=ttymxc0 video=mxcepdcfb:E68_V220,bpp=16 epdc androidboot.hardware=freescale androidboot.selinux=permissive
 BOARD_KERNEL_BASE := 0x80800000
 BOARD_KERNEL_PAGESIZE := 2048
@@ -57,7 +58,6 @@ BOARD_HAS_NO_SELECT_BUTTON := false
 # Recovery
 TARGET_RECOVERY_FSTAB := device/onyx/t68/fstab.freescale
 BOARD_CUSTOM_GRAPHICS := ../../../device/onyx/t68/recovery/graphics.c
-# BOARD_USE_CUSTOM_RECOVERY_FONT := \"roboto_15x24.h\"
 BOARD_CUSTOM_RECOVERY_KEYMAPPING := ../../device/onyx/t68/recovery/recovery_keys.c
 BOARD_CUSTOM_RECOVERY_UI := ../../device/onyx/t68/recovery/recovery_ui.c
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Freescale epdc code sourced from https://github.com/onyx-intl/platform_bootable/blob/master/recovery/minui/graphics.c
+// Freescale epdc code adapted from https://github.com/onyx-intl/platform_bootable/blob/master/recovery/minui/graphics.c
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -32,11 +32,20 @@
 #include <linux/fb.h>
 #include <linux/kd.h>
 
+#include <pixelflinger/pixelflinger.h>
+
+#ifdef BOARD_USE_CUSTOM_RECOVERY_FONT
+#include BOARD_USE_CUSTOM_RECOVERY_FONT
+#else
+#include "roboto_15x24.h"
+#endif
+
+#include "minui.h"
+
 // #include <linux/mxcfb.h>
 #include "mxcfb.h"
 
-
-// ioctl() function numbers from mxcfb.h do not match
+// ioctl() function numbers from mxcfb.h do not match prebuilt kernel
 // From strace /system/bin/recovery
 #define ONYX_SET_AUTO_UPDATE_MODE      0x4004462d
 #define ONYX_SET_WAVEFORM_MODES        0x4018462b
@@ -45,18 +54,29 @@
 #define ONYX_SEND_UPDATE               0x4044462e
 #define ONYX_WAIT_FOR_UPDATE_COMPLETE  0xc008462f
 
-#include <pixelflinger/pixelflinger.h>
-
-#include "roboto_15x24.h"
-
-#include "minui.h"
-
 typedef struct {
     GGLSurface texture;
     unsigned cwidth;
     unsigned cheight;
     unsigned ascent;
 } GRFont;
+
+typedef struct {
+    int r, g, b, a;
+} GRColor;
+
+#define THEME_TEXT_COLOR    0, 0, 0, 255
+#define END_OF_THEME        0, 0, 0, 0    
+
+/* Hack color theming into recovery for better legibility: 
+ * replace specific colors in gr_color() */
+static const GRColor THEME_COLORS[] = {
+    { 0, 191, 255, 255 },   { THEME_TEXT_COLOR }, // MENU_TEXT_COLOR
+    { 200, 200, 200, 255 }, { THEME_TEXT_COLOR }, // NORMAL_TEXT_COLOR
+    { END_OF_THEME }
+};
+
+//static const int THEME_ENTRIES = sizeof(THEME_COLORS) / (8 * sizeof(int));
 
 static GRFont *gr_font = 0;
 static GGLContext *gr_context = 0;
@@ -70,116 +90,68 @@ static int gr_fb_fd = -1;
 static struct fb_fix_screeninfo fi;
 static struct fb_var_screeninfo vi;
 
-static unsigned int marker_val = 0;
+static unsigned int epdc_update_marker = 0;
 
-bool target_has_overlay(char *version)
+static void epdc_queue_update(int left, int top, int width, int height)
 {
-    return false;
-}
-
-bool isTargetMdp5() 
-{
-    return false;
-}
-
-int free_ion_mem(void)
-{
-    return -EINVAL;
-}
-
-int alloc_ion_mem(unsigned int size)
-{
-    return -EINVAL;
-}
-
-int allocate_overlay(int fd, GGLSurface gr_fb[])
-{
-    return -EINVAL;
-}
-
-int free_overlay(int fd)
-{
-    return -EINVAL;
-}
-
-int overlay_display_frame(int fd, GGLubyte* data, size_t size)
-{
-    return -EINVAL;
-}
-
-void setDisplaySplit(void) {
-    fprintf(stderr, "Display split not supported\n");
-}
-
-int getLeftSplit(void) {
-   return 0;
-}
-
-int getRightSplit(void) {
-   return 0;
-}
-
-bool isDisplaySplit(void) {
-    return false;
-}
-
-static void update_to_display(int left, int top, int width, int height, int update_mode,
-	int wait_for_complete, uint flags)
-{
-	int retval;
 	struct mxcfb_update_data upd_data = {
-        .update_mode = update_mode,
+        .update_mode = UPDATE_MODE_PARTIAL,
         .waveform_mode = WAVEFORM_MODE_AUTO,
         .temp = TEMP_USE_AMBIENT,
-        .flags = flags,
-        .update_region = {
-            .left = left,
-            .top = top,
-            .width = width,
-            .height = height
-        }
+        .flags = 0
     };
 
     /* Crop to display, else driver complains */
     if(left >= (int) vi.xres || top >= (int) vi.yres) {
         return;
     }
-    if(left + width > (int) vi.xres) {
-        upd_data.update_region.width = vi.xres - left;
+    if(left < 0) {
+        width += left;
+        left = 0;
     }
-    if(top + height > (int) vi.yres) {
-        upd_data.update_region.height = vi.yres - top;
+    if(top < 0) {
+        height += top;
+        top = 0;
     }
-
-	if (wait_for_complete) {
-		/* Get unique marker value */
-		upd_data.update_marker = ++marker_val;
-	} else {
-		upd_data.update_marker = 0;
-	}
-
-	retval = ioctl(gr_fb_fd, ONYX_SEND_UPDATE, &upd_data);
-	
-    int i;
-    for(i = 0; retval < 0 && i < 10; i++) {
-		/* We have limited memory available for updates, so wait and
-		 * then try again after some updates have completed */
-        printf("Update failed, retry\n");
-		sleep(1);
-		retval = ioctl(gr_fb_fd, ONYX_SEND_UPDATE, &upd_data);
-	}
-    if(retval < 0) {
-        printf("Update failed finally. Error = 0x%x\n", retval);
+    if(width < 0 || height < 0) {
         return;
     }
+    if(left + width > (int) vi.xres) {
+        width = vi.xres - left;
+    }
+    if(top + height > (int) vi.yres) {
+        height = vi.yres - top;
+    }
 
-	if (wait_for_complete) {
-		/* Wait for update to complete */
-		retval = ioctl(gr_fb_fd, ONYX_WAIT_FOR_UPDATE_COMPLETE, &upd_data.update_marker);
-		if (retval < 0) {
-			printf("Wait for update complete failed.  Error = 0x%x\n", retval);
-		}
-	}
+    upd_data.update_region.left = left;
+    upd_data.update_region.top = top;
+    upd_data.update_region.width = width;
+    upd_data.update_region.height = height;
+
+    /* Get unique marker value */
+	upd_data.update_marker = ++epdc_update_marker;
+	
+    int retries = 0;
+    int retval = ioctl(gr_fb_fd, ONYX_SEND_UPDATE, &upd_data);
+
+    while(retval < 0 && retries < 10) {
+        sleep(1);
+        retval = ioctl(gr_fb_fd, ONYX_SEND_UPDATE, &upd_data);
+        retries++;
+    }
+    if(retval < 0) {
+        fprintf(stderr, "Epdc update failed\n");
+    }
+}
+
+static void epdc_flush_updates() {
+    if(epdc_update_marker > 0) {
+        if(0 > ioctl(gr_fb_fd, ONYX_WAIT_FOR_UPDATE_COMPLETE, &epdc_update_marker)) {
+            fprintf(stderr, "Epdc wait for update complete failed\n");
+        }
+        /*  Queue now empty */
+        epdc_update_marker = 0;
+    }
 }
 
 static int get_framebuffer(GGLSurface *fb)
@@ -210,7 +182,7 @@ static int get_framebuffer(GGLSurface *fb)
     }
 
     vi.bits_per_pixel = 8;
-    vi.grayscale = GRAYSCALE_8BIT_INVERTED;
+    vi.grayscale = GRAYSCALE_8BIT;
     vi.rotate = FB_ROTATE_CW;
     vi.activate = FB_ACTIVATE_FORCE;
 
@@ -260,14 +232,6 @@ static int get_framebuffer(GGLSurface *fb)
     return fd;
 }
 
-int getFbXres(void) {
-    return vi.xres;
-}
-
-int getFbYres (void) {
-    return vi.yres;
-}
-
 static void get_memory_surface(GGLSurface* ms) {
   ms->version = sizeof(*ms);
   ms->width = vi.xres;
@@ -277,17 +241,43 @@ static void get_memory_surface(GGLSurface* ms) {
   ms->format = GGL_PIXEL_FORMAT_L_8;
 }
 
+int getFbXres(void) {
+    return vi.xres;
+}
+
+int getFbYres (void) {
+    return vi.yres;
+}
+
 void gr_flip(void)
 {
+    /* Wait for last update to finish */
+    epdc_flush_updates();
+
     /* Copy new data into fb */
     memcpy(gr_framebuffer.data, gr_mem_surface.data, fi.line_length * vi.yres);
 
-    /* And apply screen update */
-   update_to_display(0, 0, vi.xres, vi.yres, UPDATE_MODE_PARTIAL, true, 0);
+    /* And schedule next screen update */
+    epdc_queue_update(0, 0, vi.xres, vi.yres);
 }
 
 void gr_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
+    /* Apply theme colors */
+    int i;
+    for(i = 0; THEME_COLORS[i].a > 0; i += 2) {
+        
+        if(r == THEME_COLORS[i].r && g == THEME_COLORS[i].g
+           && b == THEME_COLORS[i].g && a == THEME_COLORS[i].a) {
+
+            r = THEME_COLORS[i + 1].r;
+            g = THEME_COLORS[i + 1].g;
+            b = THEME_COLORS[i + 1].b;
+            a = THEME_COLORS[i + 1].a;
+            break;
+        }
+    }
+
     GGLContext *gl = gr_context;
     GGLint color[4];
     color[0] = ((r << 8) | r) + 1;
@@ -315,8 +305,6 @@ int gr_text(int x, int y, const char *s, int bold)
     unsigned off;
 
     y -= font->ascent;
-
-    int left = x, top = y;
 
     gl->bindTexture(gl, &font->texture);
     gl->texEnvi(gl, GGL_TEXTURE_ENV, GGL_TEXTURE_ENV_MODE, GGL_REPLACE);
@@ -347,9 +335,6 @@ void gr_texticon(int x, int y, gr_surface icon) {
     gl->texGeni(gl, GGL_S, GGL_TEXTURE_GEN_MODE, GGL_ONE_TO_ONE);
     gl->texGeni(gl, GGL_T, GGL_TEXTURE_GEN_MODE, GGL_ONE_TO_ONE);
     gl->enable(gl, GGL_TEXTURE_2D);
-
-    int w = gr_get_width(icon);
-    int h = gr_get_height(icon);
 
     gl->texCoord2i(gl, -x, -y);
     gl->recti(gl, x, y, x+gr_get_width(icon), y+gr_get_height(icon));
@@ -477,4 +462,55 @@ void gr_fb_blank(bool blank)
     int ret = ioctl(gr_fb_fd, FBIOBLANK, blank ? FB_BLANK_POWERDOWN : FB_BLANK_UNBLANK);
     if (ret < 0)
         perror("ioctl(): blank");
+}
+
+bool target_has_overlay(char *version)
+{
+    return false;
+}
+
+bool isTargetMdp5() 
+{
+    return false;
+}
+
+int free_ion_mem(void)
+{
+    return -EINVAL;
+}
+
+int alloc_ion_mem(unsigned int size)
+{
+    return -EINVAL;
+}
+
+int allocate_overlay(int fd, GGLSurface gr_fb[])
+{
+    return -EINVAL;
+}
+
+int free_overlay(int fd)
+{
+    return -EINVAL;
+}
+
+int overlay_display_frame(int fd, GGLubyte* data, size_t size)
+{
+    return -EINVAL;
+}
+
+void setDisplaySplit(void) {
+    fprintf(stderr, "Display split not supported\n");
+}
+
+int getLeftSplit(void) {
+   return 0;
+}
+
+int getRightSplit(void) {
+   return 0;
+}
+
+bool isDisplaySplit(void) {
+    return false;
 }
