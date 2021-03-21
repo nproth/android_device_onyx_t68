@@ -227,4 +227,20 @@ void mxcfb_elcdif_register_mode(const struct fb_videomode *modedb,
 		int num_modes, int dev_mode);
 
 #endif				/* __KERNEL__ */
+
+#ifdef PREBUILT_KERNEL
+
+// ioctl() function numbers from mxcfb.h do not match prebuilt kernel
+// From strace /system/bin/recovery
+#define MXCFB_SET_AUTO_UPDATE_MODE      0x4004462d
+#define MXCFB_SET_WAVEFORM_MODES        0x4018462b
+#define MXCFB_SET_UPDATE_SCHEME         0x40044632
+
+#define MXCFB_SEND_UPDATE               0x4044462e
+#define MXCFB_WAIT_FOR_UPDATE_COMPLETE  0xc008462f
+#else
+#error Wrong ioctl function numbers in use
 #endif
+
+#endif
+/* WARNING: DO NOT EDIT, AUTO-GENERATED CODE - SEE TOP FOR INSTRUCTIONS */

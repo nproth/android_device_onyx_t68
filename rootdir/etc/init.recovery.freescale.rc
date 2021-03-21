@@ -1,0 +1,5 @@
+on init
+    mkdir /vendor
+    mkdir /vendor/firmware
+    mkdir /vendor/firmware/imx
+    symlink /epdc_E68_V220.fw /vendor/firmware/imx/epdc.fw

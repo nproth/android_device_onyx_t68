@@ -1,0 +1,8 @@
+lib/libEGL.so
+lib/libGLES_trace.so
+lib/libGLESv1_CM.so
+lib/libGLESv2.so
+lib/libGLESv3.so
+etc/wifi/p2p_supplicant_overlay.conf
+etc/wifi/wpa_supplicant.conf
+etc/wifi/wpa_supplicant_overlay.conf

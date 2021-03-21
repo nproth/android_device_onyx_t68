@@ -42,17 +42,8 @@
 
 #include "minui.h"
 
-// #include <linux/mxcfb.h>
-#include "mxcfb.h"
-
-// ioctl() function numbers from mxcfb.h do not match prebuilt kernel
-// From strace /system/bin/recovery
-#define ONYX_SET_AUTO_UPDATE_MODE      0x4004462d
-#define ONYX_SET_WAVEFORM_MODES        0x4018462b
-#define ONYX_SET_UPDATE_SCHEME         0x40044632
-
-#define ONYX_SEND_UPDATE               0x4044462e
-#define ONYX_WAIT_FOR_UPDATE_COMPLETE  0xc008462f
+//#include <linux/mxcfb.h>
+#include "../kernel_headers/linux/mxcfb.h"
 
 typedef struct {
     GGLSurface texture;
@@ -132,11 +123,11 @@ static void epdc_queue_update(int left, int top, int width, int height)
 	upd_data.update_marker = ++epdc_update_marker;
 	
     int retries = 0;
-    int retval = ioctl(gr_fb_fd, ONYX_SEND_UPDATE, &upd_data);
+    int retval = ioctl(gr_fb_fd, MXCFB_SEND_UPDATE, &upd_data);
 
     while(retval < 0 && retries < 10) {
         sleep(1);
-        retval = ioctl(gr_fb_fd, ONYX_SEND_UPDATE, &upd_data);
+        retval = ioctl(gr_fb_fd, MXCFB_SEND_UPDATE, &upd_data);
         retries++;
     }
     if(retval < 0) {
@@ -146,7 +137,7 @@ static void epdc_queue_update(int left, int top, int width, int height)
 
 static void epdc_flush_updates() {
     if(epdc_update_marker > 0) {
-        if(0 > ioctl(gr_fb_fd, ONYX_WAIT_FOR_UPDATE_COMPLETE, &epdc_update_marker)) {
+        if(0 > ioctl(gr_fb_fd, MXCFB_WAIT_FOR_UPDATE_COMPLETE, &epdc_update_marker)) {
             fprintf(stderr, "Epdc wait for update complete failed\n");
         }
         /*  Queue now empty */
@@ -214,17 +205,17 @@ static int get_framebuffer(GGLSurface *fb)
 
     memset(fb->data, 0, fi.line_length * vi.yres);
 
-    if (ioctl(fd, ONYX_SET_AUTO_UPDATE_MODE, &auto_update_mode) < 0) {
+    if (ioctl(fd, MXCFB_SET_AUTO_UPDATE_MODE, &auto_update_mode) < 0) {
         perror("set auto update mode failed\n");
         return -1;
     }
 
-    if (ioctl(fd, ONYX_SET_WAVEFORM_MODES, &wv_modes) < 0) {
+    if (ioctl(fd, MXCFB_SET_WAVEFORM_MODES, &wv_modes) < 0) {
         perror("set waveform modes failed\n");
         return -1;
     }
 
-    if (ioctl(fd, ONYX_SET_UPDATE_SCHEME, &scheme) < 0) {
+    if (ioctl(fd, MXCFB_SET_UPDATE_SCHEME, &scheme) < 0) {
         perror("set update scheme failed\n");
         return -1;
     }
