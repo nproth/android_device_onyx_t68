@@ -24,29 +24,64 @@ on boot
 
     setprop ro.config.low_ram true
 
+    # Realtek bluetooth
+    # UART device
+    chmod 0660 /dev/ttyS2
+    chown bluetooth net_bt_stack /dev/ttyS2
+    mkdir /data/misc/bluedroid 0770 bluetooth net_bt_stack
+
+    # Power up/down interface
+    chmod 0660 /sys/class/rfkill/rfkill0/state
+    chmod 0660 /sys/class/rfkill/rfkill0/type
+    chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/state
+    chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/type
+    # TODO enable rfkill for powersaving
+    # Rfkill is somehow not working as intended (I'd blame the onyx kernel module)
+    write /sys/class/rfkill/rfkill0/state 1
+
+    # Bluetooth MAC address programming
+    chown bluetooth net_bt_stack ro.bt.bdaddr_path
+    chown bluetooth net_bt_stack /system/etc/bluetooth
+    chown bluetooth net_bt_stack /data/misc/bluetooth
+    setprop ro.bt.bdaddr_path "/data/misc/bluetooth/bdaddr"
+
+    # Bluetooth LPM
+    # chmod 0220 /proc/bluetooth/sleep/lpm
+    # chmod 0220 /proc/bluetooth/sleep/btwrite
+    # chown bluetooth net_bt_stack /proc/bluetooth/sleep/lpm
+    # chown bluetooth net_bt_stack /proc/bluetooth/sleep/btwrite
+
 on fs
     setprop ro.crypto.fuse_sdcard true
 
 on post-fs
-    mkdir /system/etc/wifi 0770 wifi wifi
-    chmod 0770 /system/etc/wifi
-    chmod 0660 /system/etc/wifi/wpa_supplicant.conf
-    chown wifi wifi /system/etc/wifi/wpa_supplicant.conf
+    #mkdir /system/etc/wifi 0770 wifi wifi
+    #chmod 0770 /system/etc/wifi
+    #chmod 0660 /system/etc/wifi/wpa_supplicant.conf
+    #chown wifi wifi /system/etc/wifi/wpa_supplicant.conf
 
 on post-fs-data
-    # check if init.rc does this already
-    # wpa_supplicant control socket for android wifi.c (android private socket)
+    # Wifi
     mkdir /data/misc/wifi 0770 wifi wifi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
-    chmod 0770 /data/misc/wifi
-    chmod 0660 /data/misc/wifi/wpa_supplicant.conf
-    chown wifi wifi /data/misc/wifi
-    chown wifi wifi /data/misc/wifi/wpa_supplicant.conf
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    chown dhcp dhcp /data/misc/dhcp
+
+
+    # wpa_supplicant control socket for android wifi.c (android private socket)
+    #mkdir /data/misc/wifi 0770 wifi wifi
+    #mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    #chmod 0770 /data/misc/wifi
+    #chmod 0660 /data/misc/wifi/wpa_supplicant.conf
+    #chmod 0660 /data/misc/wifi/p2p_supplicant.conf
+    #chown wifi wifi /data/misc/wifi
+    #chown wifi wifi /data/misc/wifi/wpa_supplicant.conf
+    #chown wifi wifi /data/misc/wifi/p2p_supplicant.conf
 
     # wpa_supplicant socket (unix socket mode)
-    mkdir /data/system/wpa_supplicant 0771 wifi wifi
-    chmod 0771 /data/system/wpa_supplicant
-    chown wifi wifi /data/system/wpa_supplicant
+    #mkdir /data/system/wpa_supplicant 0771 wifi wifi
+    #chmod 0771 /data/system/wpa_supplicant
+    #chown wifi wifi /data/system/wpa_supplicant
 
 service sdcard /system/bin/sdcard -u 1023 -g 1023 -l /data/media /mnt/shell/emulated
     class late_start

@@ -97,9 +97,6 @@ on boot
     chown system system /sys/class/backlight/pwm-backlight.0/brightness
     chmod 0660 /sys/class/backlight/pwm-backlight.0/brightness
 
-    # No bluetooth hardware present
-    setprop wlan.interface wlan0
-
 
 on property:sys.boot_completed=1
 
@@ -135,18 +132,27 @@ on property:sys.interactive="active"
     write /sys/devices/system/cpu/cpufreq/interactive/go_hispeed_load 40
 
 service p2p_supplicant /system/bin/wpa_supplicant \
-    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf -e/data/misc/wifi/entropy.bin -N \
-    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
+    -e/data/misc/wifi/entropy.bin -N \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -O/data/misc/wifi/sockets \
+    -g@android:wpa_wlan0
     class main
+    socket wpa_wlan0 dgram 660 wifi wifi
     disabled
     oneshot
 
-service wpa_supplicant /system/bin/wpa_supplicant -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf
+service wpa_supplicant /system/bin/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -O/data/misc/wifi/sockets \
+    -e/data/misc/wifi/entropy.bin \
+    -g@android:wpa_wlan0
     class main
+    socket wpa_wlan0 dgram 660 wifi wifi
     disabled
     oneshot
 
-service dhcpcd_wlan0 /system/bin/dhcpcd -aABKL
+service dhcpcd_wlan0 /system/bin/dhcpcd -aABDKL
     class main
     disabled
     oneshot
@@ -165,6 +171,19 @@ service iprenew_p2p /system/bin/dhcpcd -n
     class main
     disabled
     oneshot
+
+service rtw_fwloader /system/bin/logwrapper /system/bin/rtw_fwloader
+    class main
+    disabled
+    oneshot
+
+# TODO is group system required?
+# Changed net_bt_admin group to net_bt_stack
+service hciattach /system/bin/logwrapper /system/bin/rtk_hciattach -n -s 115200 /dev/ttymxc3 rtk_h5
+    user bluetooth
+    group bluetooth net_bt_stack system
+	disabled
+	oneshot
 
 on fs
     # mount ext4 partitions

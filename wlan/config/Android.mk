@@ -19,17 +19,18 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := dhcpcd.conf
-LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := ETC
 LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)/dhcpcd
 LOCAL_SRC_FILES := android_dhcpcd.conf
 include $(BUILD_PREBUILT)
 
-########################
+#########################
 
-WIFI_DRIVER_SOCKET_IFACE := "DIR=/data/system/wpa_supplicant GROUP=wifi"
+# Use Unix sockets to connect to wpa_supplicant
+# Escape / as \/ for sed and \/ as \\/ for bash
+#WIFI_DRIVER_SOCKET_IFACE := "DIR=\\/data\\/system\\/wpa_supplicant GROUP=wifi"
+WIFI_DRIVER_SOCKET_IFACE := wlan0
 ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_8_X_RT)
   include external/wpa_supplicant_8_rt/wpa_supplicant/wpa_supplicant_conf.mk
 endif
-
-########################
+#######################

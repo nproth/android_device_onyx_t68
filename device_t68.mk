@@ -29,18 +29,39 @@ PRODUCT_COPY_FILES += \
 	vendor/onyx/t68/proprietary/firmware/imx/epdc.fw:root/epdc_E68_V220.fw \
 	vendor/onyx/t68/proprietary/firmware/imx/epdc.fw:system/vendor/firmware/imx/epdc.fw
 
+# Supported features
+PRODUCT_COPY_FILES += \
+	frameworks/native/data/etc/tablet_core_hardware.xml:system/etc/permissions/tablet_core_hardware.xml \
+	frameworks/native/data/etc/android.hardware.bluetooth_le.xml:system/etc/permissions/android.hardware.bluetooth_le.xml \
+    frameworks/native/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
+    frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
+	frameworks/native/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
+    frameworks/native/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml \
+    frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
+	frameworks/native/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
+	frameworks/native/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml
+	
+
 # Input
 PRODUCT_COPY_FILES += \
 	device/onyx/t68/idc/gpio-keys.idc:system/usr/idc/gpio-keys.idc \
 	device/onyx/t68/keylayout/gpio-keys.kl:system/usr/keylayout/gpio-keys.kl
 
+# Audio
+PRODUCT_PACKAGES += \
+	device/onyx/t68/alsa/audio_policy.conf:system/etc/audio_policy.conf
+
 # HALs
 PRODUCT_PACKAGES += \
-    audio.primary.imx6 \
 	gralloc.imx6 \
 	hwcomposer.imx6 \
 	lights.imx6 \
-	power.imx6 
+	power.imx6 \
+	audio.primary.imx6 \
+	audio.a2dp.default \
+    audio.usb.default \
+    audio.r_submix.default \
+	sensors.default
 
 # RAMdisk
 PRODUCT_PACKAGES += \
@@ -56,9 +77,19 @@ PRODUCT_PACKAGES += \
 	libGLES
 
 # Wifi
-#PRODUCT_PACKAGES += \
-	libwpa_client \
-    hostapd \
-    dhcpcd.conf \
-    wpa_supplicant \
-    wpa_supplicant.conf
+PRODUCT_PACKAGES += \
+	rtw_fwloader
+
+# Bluetooth
+PRODUCT_PACKAGES += \
+	Bluetooth \
+    bt_vendor.conf \
+    bt_stack.conf \
+    bt_did.conf \
+    auto_pair_devlist.conf \
+    libbt-hci \
+    bluetooth.default \
+    audio.a2dp.default \
+    libbt-client-api \
+	lbbt-vendor \
+	rtk_hciattach

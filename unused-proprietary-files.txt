@@ -6,3 +6,11 @@ lib/libGLESv3.so
 etc/wifi/p2p_supplicant_overlay.conf
 etc/wifi/wpa_supplicant.conf
 etc/wifi/wpa_supplicant_overlay.conf
+etc/firmware/rtl8821a_config
+etc/firmware/rtl8821a_fw
+etc/firmware/fw_bcm40183b2.bin
+etc/firmware/fw_bcm40183b2_apsta.bin
+etc/firmware/fw_bcm40183b2_p2p.bin
+etc/firmware/fw_bcm43438a0.bin
+etc/firmware/fw_bcm43438a0_apsta.bin
+etc/firmware/fw_bcm43438a0_p2p.bin
