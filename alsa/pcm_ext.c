@@ -1,6 +1,7 @@
 /*
  * Copyright 2011, The Android Open Source Project
  * Copyright 2017 NXP
+ * Copyright (C) 2021 nproth
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:

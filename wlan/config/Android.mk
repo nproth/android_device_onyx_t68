@@ -1,5 +1,6 @@
 #
 # Copyright (C) 2008 The Android Open Source Project
+# Copyright (C) nproth
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,9 +27,6 @@ include $(BUILD_PREBUILT)
 
 #########################
 
-# Use Unix sockets to connect to wpa_supplicant
-# Escape / as \/ for sed and \/ as \\/ for bash
-#WIFI_DRIVER_SOCKET_IFACE := "DIR=\\/data\\/system\\/wpa_supplicant GROUP=wifi"
 WIFI_DRIVER_SOCKET_IFACE := wlan0
 ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_8_X_RT)
   include external/wpa_supplicant_8_rt/wpa_supplicant/wpa_supplicant_conf.mk

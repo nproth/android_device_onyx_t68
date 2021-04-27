@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Copyright (C) 2012 The CyanogenMod Project
+# Copyright (C) 2021 nproth
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ for FILE in `cat proprietary-files.txt`; do
     adb pull /system/$FILE $BASE/$FILE
 done
 
+# Cyanogenmod's extract-files cannot extract from the vendor partition
 for FILE in `cat vendor-proprietary-files.txt`; do
     DIR=`dirname $FILE`
     if [ ! -d $BASE/$DIR ]; then
